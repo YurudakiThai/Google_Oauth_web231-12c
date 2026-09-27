@@ -9,6 +9,7 @@ import {
   fetchProducts,
 } from "@/src/lib/products";
 import ProductSearchForm from "./ProductSearchForm";
+import ProductThumbnail from "./ProductImages";
 
 type LoadState = "loading" | "error" | "ready";
 
@@ -45,7 +46,7 @@ export default function ShopProductExplorer() {
   }, []);
 
   return (
-    <div className="explorer">
+    <div className="explorer shop">
       <h1>สินค้าทั้งหมด</h1>
 
       <ProductSearchForm onSearch={loadProducts} />
@@ -54,26 +55,28 @@ export default function ShopProductExplorer() {
       {status === "error" && <p className="error">{errorMessage}</p>}
       {status === "ready" && products.length === 0 && <p>ไม่พบสินค้า</p>}
       {status === "ready" && products.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>ชื่อสินค้า</th>
-              <th>ราคา</th>
-              <th>คงเหลือ</th>
-              <th>หมวดหมู่</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((item) => (
-              <tr key={item.id}>
-                <td>{item.title}</td>
-                <td>{item.price}</td>
-                <td>{item.stock}</td>
-                <td>{item.category}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="shop-grid">
+          {products.map((item) => (
+            <article className="shop-card" key={item.id}>
+              <div className="shop-card-img">
+                {item.thumbnail ? (
+                  <ProductThumbnail src={item.thumbnail} alt={`${item.title}-${item.id}`} size={220} />
+                ) : (
+                  <span>ไม่มีรูป</span>
+                )}
+                {item.stock <= 0 && <span className="shop-badge shop-badge--out">สินค้าหมด</span>}
+              </div>
+              <div className="shop-card-body">
+                <p className="shop-title" title={item.title}>{item.title}</p>
+                <p className="shop-price">฿{item.price.toLocaleString("th-TH")}</p>
+                <div className="shop-meta">
+                  <span className="shop-tag">{item.category}</span>
+                  <span className="shop-stock">เหลือ {item.stock} ชิ้น</span>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
     </div>
   );

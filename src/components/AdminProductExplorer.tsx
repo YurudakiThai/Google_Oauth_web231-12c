@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -12,6 +11,7 @@ import {
 } from "@/src/lib/products";
 import ProductSearchForm from "./ProductSearchForm";
 import ProductForm from "./ProductForm";
+import ProductThumbnail from "./ProductImages";
 
 type LoadState = "loading" | "error" | "ready";
 
@@ -88,6 +88,7 @@ export default function AdminProductExplorer() {
         <table>
           <thead>
             <tr>
+              <th>รูป</th>
               <th>ชื่อสินค้า</th>
               <th>ราคา</th>
               <th>คงเหลือ</th>
@@ -98,6 +99,13 @@ export default function AdminProductExplorer() {
           <tbody>
             {products.map((item) => (
               <tr key={item.id}>
+                <td>
+                  {item.thumbnail ? (
+                    <ProductThumbnail src={item.thumbnail} alt={`${item.title}-${item.id}`} />
+                  ) : (
+                    <span>ไม่มีรูป</span>
+                  )}
+                </td>
                 <td>{item.title}</td>
                 <td>{item.price}</td>
                 <td>{item.stock}</td>
