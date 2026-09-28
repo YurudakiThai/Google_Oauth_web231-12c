@@ -12,7 +12,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     authorized({ auth, request }) {
-      const pathname = request.next;
+      const pathname = request.nextUrl.pathname;
       // รองรับ trailing slash
       const isProductEditOrDelete = /^\/products\/[^/]+\/(edit|delete)\/?$/.test(pathname);
 
