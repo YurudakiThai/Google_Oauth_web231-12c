@@ -40,7 +40,7 @@ const initialProducts: Product[] = [
 
 declare global {
 
-  // eslint-disable-next-line no-var 
+   
 
   var demoProducts: Product[] | undefined
 

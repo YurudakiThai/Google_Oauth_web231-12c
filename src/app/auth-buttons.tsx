@@ -1,4 +1,4 @@
-import { signIn, signOut } from "@/auth"; 
+import { signIn, signOut } from "@/src/auth"; 
  
 type AuthButtonsProps = { 
   isLoggedIn: boolean; 
