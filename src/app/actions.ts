@@ -1,3 +1,5 @@
+"use server";
+
 import { auth } from "@/src/auth";
 import { deleteProduct, updateProduct } from "@/src/lib/products_2";
 import { revalidatePath } from "next/cache";
