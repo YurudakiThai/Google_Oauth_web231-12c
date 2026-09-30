@@ -1,5 +1,6 @@
 //เก็บ Zod Schema ทุกตัว Type ที่สร้างจาก Schema และฟังก์ชันเรียก API ไว้ที่เดียว ทั้งฟอร์มและการรับข้อมูลจาก API อ้างถึงไฟล์นี้
 import { z } from "zod";
+import fallbackData from "@/src/data/products-fallback.json";
 export const CATEGORIES = [
   "beauty",
   "fragrances",
@@ -37,7 +38,6 @@ export const ProductSchema = z.object({
   category: z.enum(CATEGORIES, { error: "กรุณาเลือกหมวดหมู่" }),
   thumbnail: z.string().url(),
 });
-console.log(ProductSchema);
 export const ProductListSchema = z.object({
   products: z.array(ProductSchema),
   total: z.number(),
@@ -69,7 +69,6 @@ export const defaultQuery: SearchQuery = { q: "", limit: 10, sortBy: "title" };
 
 export function buildProductUrl(q: SearchQuery) {
   const p = new URLSearchParams();
-  console.log(q);
   p.set("q", q.q);
   p.set("limit", String(q.limit));
   p.set("sortBy", q.sortBy);
@@ -77,15 +76,46 @@ export function buildProductUrl(q: SearchQuery) {
   p.set("select", "title,price,stock,category,thumbnail");
   return `${API_BASE}/products/search?${p.toString()}`;
 }
-console.log(buildProductUrl(defaultQuery));
+
+// ข้อมูลสำรองไว้ใช้เมื่อเรียก API ไม่สำเร็จ (เช่น ออฟไลน์)
+const fallbackResult = ProductListSchema.safeParse(fallbackData);
+const fallbackProducts: Product[] = fallbackResult.success
+  ? fallbackResult.data.products
+  : [];
+
+function queryFallback(q: SearchQuery): ProductList {
+  const needle = q.q.trim().toLowerCase();
+  const filtered = needle
+    ? fallbackProducts.filter((p) => p.title.toLowerCase().includes(needle))
+    : fallbackProducts;
+
+  const sorted = [...filtered].sort((a, b) => {
+    const av = a[q.sortBy];
+    const bv = b[q.sortBy];
+    if (typeof av === "string" && typeof bv === "string") {
+      return av.localeCompare(bv);
+    }
+    return Number(av) - Number(bv);
+  });
+
+  return {
+    products: sorted.slice(0, q.limit),
+    total: filtered.length,
+    skip: 0,
+    limit: q.limit,
+  };
+}
+
 export async function fetchProducts(q: SearchQuery): Promise<ProductList> {
-  const r = await fetch(buildProductUrl(q));
-  console.log("r= ", r);
-  if (!r.ok) throw new Error(`เรียกข้อมูลไม่สำเร็จ สถานะ ${r.status}`);
-  const data: unknown = await r.json();
-  console.log("data =", data);
-  const result = ProductListSchema.safeParse(data);
-  console.log("result success", result.success);
-  if (!result.success) throw new Error("รูปแบบข้อมูลที่ได้รับไม่ตรงกับที่กำหนดไว้");
-  return result.data;
+  try {
+    const r = await fetch(buildProductUrl(q));
+    if (!r.ok) throw new Error(`เรียกข้อมูลไม่สำเร็จ สถานะ ${r.status}`);
+    const data: unknown = await r.json();
+    const result = ProductListSchema.safeParse(data);
+    if (!result.success) throw new Error("รูปแบบข้อมูลที่ได้รับไม่ตรงกับที่กำหนดไว้");
+    return result.data;
+  } catch {
+    // API ใช้ไม่ได้ → ใช้ข้อมูลสำรองในเครื่องแทน
+    return queryFallback(q);
+  }
 }

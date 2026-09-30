@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 
-const FALLBACK_IMAGE = "/no-image.png";
+const FALLBACK_IMAGE = "/no-image.svg";
 
 // domain ที่ควรใช้ <img> แทน next/image
 const EXTERNAL_GIF_HOSTS = ["tenor.com", "giphy.com", "gfycat.com"];
