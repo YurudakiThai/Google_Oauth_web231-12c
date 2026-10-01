@@ -1,123 +1,113 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  type Product,
-  type ProductDraft,
-  type ProductList,
-  type SearchQuery,
-  defaultQuery,
-  fetchProducts,
-} from "@/src/lib/products";
-import ProductSearchForm from "./ProductSearchForm";
-import ProductForm from "./ProductForm";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import type { StoreProduct } from "@/src/lib/product-store";
 import ProductThumbnail from "./ProductImages";
 
-type LoadState = "loading" | "error" | "ready";
+export default function AdminProductExplorer({
+  products,
+}: {
+  products: StoreProduct[];
+}) {
+  const [query, setQuery] = useState("");
 
-export default function AdminProductExplorer() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [status, setStatus] = useState<LoadState>("loading");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [editing, setEditing] = useState<Product | null>(null);
-
-  function showResult(list: ProductList) {
-    setProducts(list.products);
-    setStatus("ready");
-  }
-
-  function showError(err: unknown) {
-    setErrorMessage(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-    setStatus("error");
-  }
-
-  async function loadProducts(query: SearchQuery) {
-    setStatus("loading");
-    setErrorMessage("");
-    try {
-      const list = await fetchProducts(query);
-      showResult(list);
-    } catch (err) {
-      showError(err);
-    }
-  }
-
-  // โหลดครั้งเดียวตอนเปิดหน้า
-  useEffect(() => {
-    fetchProducts(defaultQuery).then(showResult).catch(showError);
-  }, []);
-
-  // เพิ่ม/แก้ไข อยู่ใน client state เท่านั้น ไม่มีการเรียก API เขียนจริง
-  function saveProduct(draft: ProductDraft) {
-    if (editing) {
-      setProducts(
-        products.map((p) => (p.id === editing.id ? { ...draft, id: p.id } : p))
-      );
-      setEditing(null);
-    } else {
-      setProducts([...products, { ...draft, id: Date.now() }]);
-    }
-  }
-
-  function deleteProduct(id: number) {
-    setProducts(products.filter((p) => p.id !== id));
-    if (editing?.id === id) setEditing(null); // ลบตัวที่กำลังแก้ → กลับโหมดเพิ่ม
-  }
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) return products;
+    return products.filter((item) =>
+      [item.title, item.category, item.description].some((value) =>
+        value.toLowerCase().includes(needle),
+      ),
+    );
+  }, [products, query]);
 
   return (
-    <div className="explorer">
-      <h1>แผงควบคุมแอดมิน</h1>
-      <p className="hint">
-        ข้อมูลที่เพิ่ม/แก้/ลบ อยู่ใน memory ของแท็บนี้เท่านั้น รีเฟรชแล้วหาย
-        (ดูหัวข้อ &quot;HTTP 200 ≠ บันทึกจริง&quot;)
-      </p>
+    <div className="explorer admin">
+      <header className="admin-head">
+        <div>
+          <h1>แผงควบคุมแอดมิน</h1>
+          <p>แก้ไข ลบ และเพิ่มสินค้าได้จริง</p>
+        </div>
+        <Link className="button" href="/products/new">
+          + เพิ่มสินค้าใหม่
+        </Link>
+      </header>
 
-      <ProductSearchForm onSearch={loadProducts} />
+      <div className="admin-stats">
+        <span className="stat-chip">สินค้าทั้งหมด {products.length} รายการ</span>
+        {query.trim() && (
+          <span className="stat-chip">ตรงกับคำค้น {filtered.length} รายการ</span>
+        )}
+      </div>
 
-      <ProductForm
-        key={editing?.id ?? "new"}
-        editing={editing}
-        onSave={saveProduct}
-        onCancel={() => setEditing(null)}
-      />
+      <div className="admin-toolbar">
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="ค้นหาชื่อ / หมวดหมู่ / รายละเอียด..."
+          aria-label="ค้นหาสินค้า"
+        />
+      </div>
 
-      {status === "loading" && <p>กำลังโหลด...</p>}
-      {status === "error" && <p className="error">{errorMessage}</p>}
-      {status === "ready" && products.length === 0 && <p>ไม่พบสินค้า</p>}
-      {status === "ready" && products.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>รูป</th>
-              <th>ชื่อสินค้า</th>
-              <th>ราคา</th>
-              <th>คงเหลือ</th>
-              <th>หมวดหมู่</th>
-              <th>จัดการ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((item) => (
-              <tr key={item.id}>
-                <td>
-                  {item.thumbnail ? (
-                    <ProductThumbnail src={item.thumbnail} alt={`${item.title}-${item.id}`} />
-                  ) : (
-                    <span>ไม่มีรูป</span>
-                  )}
-                </td>
-                <td>{item.title}</td>
-                <td>{item.price}</td>
-                <td>{item.stock}</td>
-                <td>{item.category}</td>
-                <td className="row-actions">
-                  <button onClick={() => setEditing(item)}>แก้ไข</button>
-                  <button onClick={() => deleteProduct(item.id)}>ลบ</button>
-                </td>
+      {filtered.length === 0 ? (
+        <p className="empty">
+          {products.length === 0
+            ? "ยังไม่มีสินค้า เริ่มต้นด้วยการเพิ่มสินค้าใหม่"
+            : "ไม่พบสินค้าที่ตรงกับคำค้น"}
+        </p>
+      ) : (
+        <div className="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>รูป</th>
+                <th>ชื่อสินค้า</th>
+                <th>ราคา</th>
+                <th>คงเหลือ</th>
+                <th>หมวดหมู่</th>
+                <th>จัดการ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    {item.thumbnail ? (
+                      <ProductThumbnail
+                        src={item.thumbnail}
+                        alt={`${item.title}-${item.id}`}
+                      />
+                    ) : (
+                      <span>ไม่มีรูป</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className="cell-title">{item.title}</span>
+                    <span className="cell-sub">{item.description}</span>
+                  </td>
+                  <td>฿{item.price.toLocaleString("th-TH")}</td>
+                  <td>{item.stock}</td>
+                  <td>{item.category}</td>
+                  <td className="row-actions">
+                    <Link
+                      className="button small"
+                      href={`/products/${item.id}/edit`}
+                    >
+                      แก้ไข
+                    </Link>
+                    <Link
+                      className="button small danger"
+                      href={`/products/${item.id}/delete`}
+                    >
+                      ลบ
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

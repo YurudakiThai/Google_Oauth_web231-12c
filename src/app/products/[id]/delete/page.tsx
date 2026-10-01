@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/src/auth";
-import { getProduct } from "@/src/lib/products_2";
+import { getProduct } from "@/src/lib/product-store";
 import { deleteProductAction } from "@/src/app/actions";
+import ProductThumbnail from "@/src/components/ProductImages";
 
 type DeleteProductPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function DeleteProductPage({ params }: DeleteProductPageProps) {
+export default async function DeleteProductPage({
+  params,
+}: DeleteProductPageProps) {
   const session = await auth();
   if (!session?.user) {
-    // เติม: ฟังก์ชันที่พาผู้ที่ยังไม่ล็อกอินกลับหน้าแรก
     redirect("/");
   }
 
@@ -21,17 +23,52 @@ export default async function DeleteProductPage({ params }: DeleteProductPagePro
     notFound();
   }
 
-  const deleteAction = deleteProductAction.bind(null, product.id);
+  const deleteAction = deleteProductAction.bind(null, String(product.id));
 
   return (
-    <main>
-      <h1>ยืนยันการลบ</h1>
-      <p>ต้องการลบสินค้า “{product.name}” หรือไม่?</p>
-      <div>
-        <form action={deleteAction}>
-          <button type="submit">ยืนยันการลบ</button>
-        </form>
-        <Link href="/">ยกเลิก</Link>
+    <main className="editor-page">
+      <Link className="back-link" href="/admin">
+        ← กลับไปหน้าจัดการ
+      </Link>
+
+      <div className="danger-card">
+        <span className="danger-icon" aria-hidden>
+          🗑️
+        </span>
+        <h1>ยืนยันการลบสินค้า</h1>
+        <p className="danger-note">
+          การลบไม่สามารถย้อนกลับได้ โปรดตรวจสอบให้แน่ใจก่อนดำเนินการ
+        </p>
+
+        <div className="danger-product">
+          {product.thumbnail ? (
+            <ProductThumbnail
+              src={product.thumbnail}
+              alt={product.title}
+              size={72}
+            />
+          ) : (
+            <span className="danger-noimg">ไม่มีรูป</span>
+          )}
+          <div>
+            <p className="danger-name">{product.title}</p>
+            <p className="danger-meta">
+              ฿{product.price.toLocaleString("th-TH")} · เหลือ {product.stock} ชิ้น ·{" "}
+              {product.category}
+            </p>
+          </div>
+        </div>
+
+        <div className="editor-actions">
+          <form action={deleteAction}>
+            <button className="danger" type="submit">
+              ยืนยันการลบ
+            </button>
+          </form>
+          <Link className="button secondary" href="/admin">
+            ยกเลิก
+          </Link>
+        </div>
       </div>
     </main>
   );

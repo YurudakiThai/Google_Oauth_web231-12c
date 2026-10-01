@@ -1,7 +1,13 @@
 "use server";
 
 import { auth } from "@/src/auth";
-import { deleteProduct, updateProduct } from "@/src/lib/products_2";
+import {
+  ProductInputSchema,
+  createProduct,
+  deleteProduct,
+  updateProduct,
+} from "@/src/lib/product-store";
+import type { FormState } from "@/src/lib/form-state";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,31 +19,80 @@ async function requireUser() {
   return session.user;
 }
 
-export async function updateProductAction(id: string, formData: FormData) {
-  // เติม: ฟังก์ชันที่ตรวจ session ซ้ำก่อนแก้ข้อมูล
+function readInput(formData: FormData) {
+  return {
+    title: formData.get("title"),
+    description: formData.get("description"),
+    price: formData.get("price"),
+    stock: formData.get("stock"),
+    category: formData.get("category"),
+    thumbnail: formData.get("thumbnail"),
+  };
+}
+
+function toFieldErrors(issues: { path: PropertyKey[]; message: string }[]) {
+  const fieldErrors: Record<string, string> = {};
+  for (const issue of issues) {
+    const key = String(issue.path[0] ?? "form");
+    if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+  }
+  return fieldErrors;
+}
+
+function refreshProductPages() {
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/shop");
+}
+
+export async function updateProductAction(
+  id: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requireUser();
 
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const price = Number(formData.get("price"));
-
-  if (!name || !description) {
-    throw new Error("กรุณากรอกข้อมูลให้ครบ");
-  }
-  if (!Number.isFinite(price) || price < 0) {
-    throw new Error("ราคาไม่ถูกต้อง");
+  const parsed = ProductInputSchema.safeParse(readInput(formData));
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "กรุณาตรวจสอบข้อมูลอีกครั้ง",
+      fieldErrors: toFieldErrors(parsed.error.issues),
+    };
   }
 
-  updateProduct(id, { name, description, price });
+  const updated = updateProduct(id, parsed.data);
+  if (!updated) {
+    return { status: "error", message: "ไม่พบสินค้าที่ต้องการแก้ไข" };
+  }
 
-  // เติม: ฟังก์ชันที่สั่งให้ Next ดึงข้อมูลหน้าแรกใหม่
-  revalidatePath("/");
-  redirect("/");
+  refreshProductPages();
+  redirect("/admin");
+}
+
+export async function createProductAction(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireUser();
+
+  const parsed = ProductInputSchema.safeParse(readInput(formData));
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: "กรุณาตรวจสอบข้อมูลอีกครั้ง",
+      fieldErrors: toFieldErrors(parsed.error.issues),
+    };
+  }
+
+  createProduct(parsed.data);
+  refreshProductPages();
+  redirect("/admin");
 }
 
 export async function deleteProductAction(id: string) {
   await requireUser();
   deleteProduct(id);
-  revalidatePath("/");
-  redirect("/");
+  refreshProductPages();
+  redirect("/admin");
 }

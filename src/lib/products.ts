@@ -1,32 +1,10 @@
 //เก็บ Zod Schema ทุกตัว Type ที่สร้างจาก Schema และฟังก์ชันเรียก API ไว้ที่เดียว ทั้งฟอร์มและการรับข้อมูลจาก API อ้างถึงไฟล์นี้
 import { z } from "zod";
 import fallbackData from "@/src/data/products-fallback.json";
-export const CATEGORIES = [
-  "beauty",
-  "fragrances",
-  "furniture",
-  "groceries",
-  "home-decoration",
-  "kitchen-accessories",
-  "laptops",
-  "mens-shirts",
-  "mens-shoes",
-  "mens-watches",
-  "mobile-accessories",
-  "motorcycle",
-  "skin-care",
-  "smartphones",
-  "sports-accessories",
-  "sunglasses",
-  "tablets",
-  "tops",
-  "vehicle",
-  "womens-bags",
-  "womens-dresses",
-  "womens-jewellery",
-  "womens-shoes",
-  "womens-watches",
-] as const;
+import { CATEGORIES } from "@/src/lib/categories";
+
+// ยังคง re-export ไว้เพื่อให้โค้ดเดิมที่ import จากไฟล์นี้ใช้ได้เหมือนเดิม
+export { CATEGORIES };
 export const ProductSchema = z.object({
   id: z.number(),
   title: z.string().trim().min(1, "กรุณากรอกชื่อสินค้า"),

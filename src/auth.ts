@@ -15,8 +15,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const pathname = request.nextUrl.pathname;
       // รองรับ trailing slash
       const isProductEditOrDelete = /^\/products\/[^/]+\/(edit|delete)\/?$/.test(pathname);
+      const isNewProduct = /^\/products\/new\/?$/.test(pathname);
 
-      if (isProductEditOrDelete) {
+      if (isProductEditOrDelete || isNewProduct) {
         return Boolean(auth?.user);
       }
 

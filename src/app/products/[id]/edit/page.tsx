@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/src/auth";
-import { getProduct } from "@/src/lib/products_2";
+import { getProduct } from "@/src/lib/product-store";
 import { updateProductAction } from "@/src/app/actions";
+import ProductEditorForm from "@/src/components/ProductEditorForm";
 
 type EditProductPageProps = {
   params: Promise<{ id: string }>;
@@ -14,50 +15,30 @@ export default async function EditProductPage({ params }: EditProductPageProps) 
     redirect("/");
   }
 
-  // เติม: ค่าที่ Next 16 ทำเป็น Promise จึงต้อง await
+  // Next 16: params เป็น Promise จึงต้อง await
   const { id } = await params;
   const product = getProduct(id);
   if (!product) {
     notFound();
   }
 
-  // เติม: เมธอดที่ผูกอาร์กิวเมนต์แรกให้ฟังก์ชันไว้ล่วงหน้า
-  const updateAction = updateProductAction.bind(null, product.id);
+  const updateAction = updateProductAction.bind(null, String(product.id));
 
   return (
-    <main>
+    <main className="editor-page">
+      <Link className="back-link" href="/admin">
+        ← กลับไปหน้าจัดการ
+      </Link>
       <h1>แก้ไขสินค้า</h1>
-      <form action={updateAction}>
-        <div>
-          <label htmlFor="name">ชื่อสินค้า</label>
-          <input id="name" name="name" defaultValue={product.name} required />
-        </div>
-        <div>
-          <label htmlFor="price">ราคา</label>
-          <input
-            id="price"
-            name="price"
-            type="number"
-            min="0"
-            step="0.01"
-            defaultValue={product.price}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="description">รายละเอียด</label>
-          <textarea
-            id="description"
-            name="description"
-            defaultValue={product.description}
-            required
-          />
-        </div>
-        <div>
-          <button type="submit">บันทึก</button>
-          <Link href="/">ยกเลิก</Link>
-        </div>
-      </form>
+      <p className="hint">
+        ปรับรายละเอียดของ “{product.title}” แล้วกดบันทึก การเปลี่ยนแปลงจะแสดงในหน้าจัดการทันที
+      </p>
+
+      <ProductEditorForm
+        action={updateAction}
+        product={product}
+        submitLabel="บันทึกการแก้ไข"
+      />
     </main>
   );
 }

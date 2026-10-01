@@ -1,0 +1,28 @@
+// รายการหมวดหมู่สินค้า แยกไว้ที่ไฟล์เล็ก ๆ
+// เพื่อให้ client component นำไปใช้ได้โดยไม่ต้องดึงข้อมูล/โค้ด fetch ทั้งก้อน
+export const CATEGORIES = [
+  "beauty",
+  "fragrances",
+  "furniture",
+  "groceries",
+  "home-decoration",
+  "kitchen-accessories",
+  "laptops",
+  "mens-shirts",
+  "mens-shoes",
+  "mens-watches",
+  "mobile-accessories",
+  "motorcycle",
+  "skin-care",
+  "smartphones",
+  "sports-accessories",
+  "sunglasses",
+  "tablets",
+  "tops",
+  "vehicle",
+  "womens-bags",
+  "womens-dresses",
+  "womens-jewellery",
+  "womens-shoes",
+  "womens-watches",
+] as const;
